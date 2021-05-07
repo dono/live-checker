@@ -22,13 +22,18 @@ func main() {
 	mail := os.Getenv("NICONICO_MAIL")
 	pass := os.Getenv("NICONICO_PASS")
 
-	client := new(http.Client)
+	client := &http.Client{
+        CheckRedirect: func(req *http.Request, via []*http.Request) error {
+            return http.ErrUseLastResponse
+        },
+    }
 
 	form := url.Values{}
 	form.Add("mail_tel", mail)
 	form.Add("password", pass)
 
 	body := strings.NewReader(form.Encode())
+	fmt.Println(body)
 
 	req, err := http.NewRequest("POST", URL, body)
 	if err != nil {
@@ -42,8 +47,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// 302 ga kaette kuru hazu nanda kedo...
 
 	fmt.Println(resp)
 }
