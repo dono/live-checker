@@ -33,7 +33,6 @@ func main() {
 	form.Add("password", pass)
 
 	body := strings.NewReader(form.Encode())
-	fmt.Println(body)
 
 	req, err := http.NewRequest("POST", URL, body)
 	if err != nil {
@@ -41,12 +40,24 @@ func main() {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; MAFSJS; rv:11.0) like Gecko")
 
 	resp, err := client.Do(req)	
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(resp)
+	userSession := ""
+	userSessionSecure := ""
+
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "user_session" && cookie.Value != "deleted" {
+			userSession = cookie.Value
+		}
+		if cookie.Name == "user_session_secure" {
+			userSessionSecure = cookie.Value
+		}
+	}
+
+	fmt.Println(userSession)
+	fmt.Println(userSessionSecure)
 }
