@@ -1,80 +1,67 @@
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"strings"
+)
 
-const URL = `https://account.nicovideo.jp/login/redirector`
 
-func main() {
-	// if err := godotenv.Load(); err != nil {
-	// 	log.Fatal(err)
-	// }
+type Community struct {
+	Meta struct {
+		Status int `json:"status"`
+	} `json:"meta"`
+	Data struct {
+		Total int `json:"total"`
+		Lives []struct {
+			ID          string `json:"id"`
+			Title       string `json:"title"`
+			Description string `json:"description"`
+			Status      string `json:"status"`
+			UserID      int    `json:"user_id"`
+			WatchURL    string `json:"watch_url"`
+			Features    struct {
+				IsMemberOnly bool `json:"is_member_only"`
+			} `json:"features"`
+			Timeshift struct {
+				Enabled    bool   `json:"enabled"`
+				CanView    bool   `json:"can_view"`
+				FinishedAt string `json:"finished_at"`
+			} `json:"timeshift"`
+			StartedAt  string `json:"started_at"`
+			FinishedAt string `json:"finished_at"`
+		} `json:"lives"`
+	} `json:"data"`
+}
 
-	// jar, err := cookiejar.New(&cookiejar.Options{})
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 
-	// mail := os.Getenv("NICONICO_MAIL")
-	// pass := os.Getenv("NICONICO_PASS")
+func getLiveStatus(community_id string) {
+	community_num := strings.Trim(community_id, "co")
 
-	// client := &http.Client{
-	// 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
-	// 		return http.ErrUseLastResponse
-	// 	},
-	// 	 Jar:     jar,
-	// }
+	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json?limit=1&offset=0", community_num)
 
-	// form := url.Values{}
-	// form.Add("mail_tel", mail)
-	// form.Add("password", pass)
+    resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+    defer resp.Body.Close()
 
-	// body := strings.NewReader(form.Encode())
+    b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// req, err := http.NewRequest("POST", URL, body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	community := new(Community)
 
-	// req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err := json.Unmarshal(b, community); err != nil {
+		log.Fatal(err)
+    }
 
-	// _, err = client.Do(req)	
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	liveStatus := community.Data.Lives[0].Status // "ENDED" or "ON_AIR"
 
-	// req, err = http.NewRequest("GET", "https://com.nicovideo.jp/community/co3000390", body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// defer resp.Body.Close()
-
-	// bytes, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// fmt.Println(string(bytes))
-
-	// userSession := ""
-	// userSessionSecure := ""
-
-	// for _, cookie := range resp.Cookies() {
-	// 	if cookie.Name == "user_session" && cookie.Value != "deleted" {
-	// 		userSession = cookie.Value
-	// 	}
-	// 	if cookie.Name == "user_session_secure" {
-	// 		userSessionSecure = cookie.Value
-	// 	}
-	// }
-
-	// fmt.Println(userSession)
-	// fmt.Println(userSessionSecure)
-
-   // https://com.nicovideo.jp/api/v1/communities/2021140/lives.json?limit=1&offset=0
    // ↑で配信されてるかどうか一発で取れる件
+   // https://public.api.nicovideo.jp/v1/users.json?userIds=26578404
 }
