@@ -9,6 +9,25 @@ import (
 	"strings"
 )
 
+type Client struct {
+	HTTPClient *http.Client
+}
+
+type Live struct {
+	ID          string
+	Title       string
+	Description string
+	Status      string
+	UserID      string
+	WatchURL    string
+}
+
+type User struct {
+	UserID string
+	Name string
+	IconURL string
+}
+
 
 type Community struct {
 	Meta struct {
@@ -38,12 +57,17 @@ type Community struct {
 }
 
 
-func getLiveStatus(community_id string) {
+func (c *Client)getLiveStatus(community_id string) Live {
 	community_num := strings.Trim(community_id, "co")
 
 	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json?limit=1&offset=0", community_num)
 
-    resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    resp, err := c.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,8 +84,42 @@ func getLiveStatus(community_id string) {
 		log.Fatal(err)
     }
 
-	liveStatus := community.Data.Lives[0].Status // "ENDED" or "ON_AIR"
+	live := community.Data.Lives[0] // "ENDED" or "ON_AIR"
 
-   // ↑で配信されてるかどうか一発で取れる件
-   // https://public.api.nicovideo.jp/v1/users.json?userIds=26578404
+    return Live{
+    	ID:          live.ID,
+    	Title:       live.Title,
+    	Description: live.Description,
+    	Status:      live.Status,
+    	UserID:      string(live.UserID),
+    	WatchURL:    live.WatchURL,
+    }
+}
+
+def (c *Client)getUser(userID string) User {
+	url := fmt.Sprintf("https://public.api.nicovideo.jp/v1/users.json?userIds=%s", user_id)
+
+	req, err := http.NewRequest("GET", url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    resp, err := c.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+    defer resp.Body.Close()
+
+    b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := json.Unmarshal(b, user); err != nil {
+		log.Fatal(err)
+    }
+
+	return User{
+		UserID: 
+	}
 }
