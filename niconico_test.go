@@ -4,22 +4,23 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestGetLiveStatus(t *testing.T) {
+func TestGetLive(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
 	dummyURL := `https://com.nicovideo.jp/api/v1/communities/888888/lives.json?limit=1&offset=0`
 
 	dummyJSON := `{
-					"meta": { "status": 200 },
+					"meta": {"status": 200},
 	                "data": {
-						total": 1106,
+						"total": 1106,
 					    "lives": [
 							{"id": "lv1234",
-						 	 "title": "たいとる",
-							 "description": "ですくりぷしょん",
+						 	 "title": "test title",
+							 "description": "test description",
 							 "status": "ON_AIR",
 							 "user_id": 1234,
 							 "watch_url": "https:\/\/live.nicovideo.jp\/watch\/lv1234",
@@ -35,37 +36,34 @@ func TestGetLiveStatus(t *testing.T) {
 	httpmock.RegisterResponder(
 		"GET",
 		dummyURL,
-		httpmock.NewJsonResponder(200, dummyJSON),
+		httpmock.NewStringResponder(200, dummyJSON),
 	)
 
 	client := New()
 
-	live, err := client.GetLiveStatus("co888888")
+	live, err := client.GetLive("co888888")
 	if err != nil {
 		t.Error(err)
 	}
 
-	if live.ID != "lv1234" {
-		t.Errorf("unexpected: %s\n", live.ID)
+	assert.Equal(t, "lv1234", live.ID)
+	assert.Equal(t, "test title", live.Title)
+	assert.Equal(t, "test description", live.Description)
+	assert.Equal(t, "ON_AIR", live.Status)
+	assert.Equal(t, "1234", live.UserID)
+	assert.Equal(t, "https://live.nicovideo.jp/watch/lv1234", live.WatchURL)
+}
+
+func TestGetUser(t *testing.T) {
+	client := New()
+
+	// mock用意するのめんどいわ
+	user, err := client.GetUser("26578404")
+	if err != nil {
+		t.Error(err)
 	}
 
-	if live.Title != "たいとる" {
-		t.Errorf("unexpected: %s\n", live.Title)
-	}
-
-	if live.Description != "ですくりぷしょん" {
-		t.Errorf("unexpected: %s\n", live.Description)
-	}
-
-	if live.Status != "ON_AIR" {
-		t.Errorf("unexpected: %s\n", live.Status)
-	}
-
-	if live.UserID != "1234" {
-		t.Errorf("unexpected: %s\n", live.UserID)
-	}
-
-	if live.WatchURL != `https:\/\/live.nicovideo.jp\/watch\/lv1234` {
-		t.Errorf("unexpected: %s\n", live.WatchURL)
-	}
+	assert.Equal(t, "teguru", user.Name)
+	assert.Equal(t, "26578404", user.UserID)
+	assert.Equal(t, "https://secure-dcdn.cdn.nimg.jp/nicoaccount/usericon/2657/26578404.jpg", user.IconURL)
 }

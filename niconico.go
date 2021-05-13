@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
@@ -28,6 +29,15 @@ type User struct {
 	IconURL string
 }
 
+func genUserIconURL(userID string) string {
+	// 123456
+	// https://secure-dcdn.cdn.nimg.jp/nicoaccount/usericon/2657/26578404.jpg
+	prefix := userID[:len(userID) - 4]
+	url := fmt.Sprintf("https://secure-dcdn.cdn.nimg.jp/nicoaccount/usericon/%s/%s.jpg", prefix, userID)
+
+	return url
+}
+
 
 func New() *Client {
     return &Client{
@@ -50,7 +60,7 @@ func (c *Client)Get(url string) (*http.Response, error) {
 }
 
 
-func (c *Client)GetLiveStatus(community_id string) (*Live, error) {
+func (c *Client)GetLive(community_id string) (*Live, error) {
 	community_num := strings.Trim(community_id, "co")
 	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json?limit=1&offset=0", community_num)
 
@@ -73,39 +83,41 @@ func (c *Client)GetLiveStatus(community_id string) (*Live, error) {
 	live := js.GetPath("data", "lives").GetIndex(0)
 
     return &Live{
-		ID: live.Get("id").MustString(),
-		Title: live.Get("title").MustString(),
-		Description: live.Get("Description").MustString(),
-		Status: live.Get("status").MustString(),
-		UserID: live.Get("user_id").MustString(),
-		WatchURL: live.Get("watch_url").MustString(),
+		ID:          live.Get("id").MustString(),
+		Title:       live.Get("title").MustString(),
+		Description: live.Get("description").MustString(),
+		Status:      live.Get("status").MustString(),
+		UserID:      strconv.Itoa(live.Get("user_id").MustInt()),
+		WatchURL:    live.Get("watch_url").MustString(),
 	}, nil
 }
 
-// def (c *Client)getUser(userID string) User {
-// 	url := fmt.Sprintf("https://public.api.nicovideo.jp/v1/users.json?userIds=%s", user_id)
-// 
-// 	req, err := http.NewRequest("GET", url)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 
-//     resp, err := c.Do(req)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-//     defer resp.Body.Close()
-// 
-//     b, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 
-// 	if err := json.Unmarshal(b, user); err != nil {
-// 		log.Fatal(err)
-//     }
-// 
-// 	return User{
-// 		UserID: 
-// 	}
-// }
+
+func (c *Client)GetUser(userID string) (*User, error) {
+	url := fmt.Sprintf("https://public.api.nicovideo.jp/v1/users.json?userIds=%s", userID)
+
+	resp, err := c.Get(url)
+	if err != nil {
+		return nil, err
+	}
+    defer resp.Body.Close()
+
+    b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	js, err := simplejson.NewJson(b)
+	if err != nil {
+		return nil, err
+	}
+
+	name := js.Get("data").GetIndex(0).Get("nickname").MustString()
+	iconURL := genUserIconURL(userID)
+
+	return &User{
+		UserID: userID,
+		Name: name,
+		IconURL: iconURL,	
+	}, nil
+}
