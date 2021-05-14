@@ -1,4 +1,4 @@
-package main
+package niconico
 
 import (
 	"fmt"
@@ -30,8 +30,6 @@ type User struct {
 }
 
 func genUserIconURL(userID string) string {
-	// 123456
-	// https://secure-dcdn.cdn.nimg.jp/nicoaccount/usericon/2657/26578404.jpg
 	prefix := userID[:len(userID) - 4]
 	url := fmt.Sprintf("https://secure-dcdn.cdn.nimg.jp/nicoaccount/usericon/%s/%s.jpg", prefix, userID)
 
