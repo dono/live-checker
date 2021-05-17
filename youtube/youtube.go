@@ -10,27 +10,6 @@ import (
 	"github.com/mattn/go-jsonpointer"
 )
 
-type Channel struct {
-    Contents         struct {
-		TwoColumnBrowseResultsRenderer struct {
-			Tabs []struct {
-				TabRenderer struct {
-					Endpoint       interface{} `json:"endpoint"`
-					Title          interface{} `json:"title"`
-					Selected       interface{} `json:"selected"`
-					Content        interface{} `json:"contents"`
-					TrackingParams interface{} `json:"trackingParams"`
-				} `json:"tabRenderer"`
-			} `json:"tabs"`
-		} `json:"twoColumnBrowseResultsRenderer"`
-	} `json:"contents"` // 使う
-	Metadata         interface{} `json:"metadata"` // 使う
-	ResponseContext  interface{} `json:"responseContext"`
-	Header           interface{} `json:"header"`
-	TrackingParams   interface{} `json:"trackingParams"`
-	Topbar           interface{} `json:"topbar"`
-	Microformat      interface{} `json:"microformat"`
-}
 
 
 type Client struct {
@@ -51,6 +30,23 @@ type User struct {
 	UserID  string
 	Name    string
 	IconURL string
+}
+
+func jpToString(jsonBytes []byte, jp string) (string, error) {
+	var obj interface{}
+	json.Unmarshal(jsonBytes, &obj)
+
+	v, err := jsonpointer.Get(obj, jp)
+	if err != nil {
+		return "", err
+	}
+
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
 }
 
 func New() *Client {
@@ -75,7 +71,9 @@ func (c *Client)Get(url string) (*http.Response, error) {
 
 
 func (c *Client)GetLive(channelID string) (*Live, error) {
-	url := `https://www.youtube.com/channel/UCshX7abyGGG2WqCuYC5En7w`
+	url := `https://www.youtube.com/channel/UCNsidkYpIAQ4QaufptQBPHQ`
+	// url := `https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g`
+	// url := `https://www.youtube.com/channel/UCXteDRy5qB0IjA8WPusCJ7w`
 	resp, err := c.Get(url)
 
 	// ytInitialData を抜き出す
@@ -102,28 +100,54 @@ func (c *Client)GetLive(channelID string) (*Live, error) {
 		return true
 	})
 
-	
-	// js, err := simplejson.NewJson(byte[](ytInitialData))
-	// if err != nil {
-	// 	return nil, err
-	// }
+	titleJp := strings.Join([]string{
+		"",
+		"contents",
+		"twoColumnBrowseResultsRenderer",
+		"tabs",
+		"0",
+		"tabRenderer",
+		"content",
+		"sectionListRenderer",
+		"contents",
+		"0",
+		"itemSectionRenderer",
+		"contents",
+		"0",
+		"channelFeaturedContentRenderer",
+		"items",
+		"0",
+		"videoRenderer",
+		"title",
+		"runs",
+		"0",
+		"text",
+	}, "/")
 
-	// js.GetPath("contents", "twoColumnBrowseResultsRenderer", "tabs").GetIndex(0).GetPath("tabRenderer", "contents").GetIndex(0).
-	var obj interface{}
-	json.Unmarshal([]byte(ytInitialData), &obj)
+	channelNameJp := "/metadata/channelMetadataRenderer/title"
+	channelThumbnailURLJp := "/metadata/channelMetadataRenderer/avatar/thumbnails/0/url"
 
-	// v, err := jsonpointer.Get(obj, "/contents/twoColumnBrowseResultsRenderer/tabs/0/tabRenderer/content/sectionListRenderer/contents/0/itemSectionRenderer/contents/0/channelFeaturedContentRenderer/items/0/videoRenderer")
-	v, err := jsonpointer.Get(obj, "/contents/twoColumnBrowseResultsRenderer/tabs/0/tabRenderer/content/sectionListRenderer/contents/0/itemSectionRenderer/contents/0") // なぜかここより先参照できんが
+
+	title, err := jpToString([]byte(ytInitialData), titleJp)
 	if err != nil {
 		return nil, err
 	}
 
-	out, err := json.Marshal(v)
+	channelName, err := jpToString([]byte(ytInitialData), channelNameJp)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(string(out))
+	channelThumbnailURL, err := jpToString([]byte(ytInitialData), channelThumbnailURLJp)
+	if err != nil {
+		return nil, err
+	}
+
+
+	fmt.Println(title)
+	fmt.Println(channelName)
+	fmt.Println(channelThumbnailURL)
+
 
 	return nil, nil
 }
