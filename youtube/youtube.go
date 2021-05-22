@@ -10,11 +10,9 @@ import (
 	"github.com/mattn/go-jsonpointer"
 )
 
-
-
 type Client struct {
 	HTTPClient *http.Client
-	Header *http.Header
+	Header     *http.Header
 }
 
 type Live struct {
@@ -50,18 +48,18 @@ func jpToString(jsonBytes []byte, jp string) (string, error) {
 }
 
 func New() *Client {
-    return &Client{
-        HTTPClient: http.DefaultClient,
-    }
+	return &Client{
+		HTTPClient: http.DefaultClient,
+	}
 }
 
-func (c *Client)Get(url string) (*http.Response, error) {
+func (c *Client) Get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-    resp, err := c.HTTPClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +67,7 @@ func (c *Client)Get(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-
-func (c *Client)GetLive(channelID string) (*Live, error) {
+func (c *Client) GetLive(channelID string) (*Live, error) {
 	url := `https://www.youtube.com/channel/UCNsidkYpIAQ4QaufptQBPHQ`
 	// url := `https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g`
 	// url := `https://www.youtube.com/channel/UCXteDRy5qB0IjA8WPusCJ7w`
@@ -80,12 +77,12 @@ func (c *Client)GetLive(channelID string) (*Live, error) {
 	if err != nil {
 		return nil, err
 	}
-    defer resp.Body.Close()
+	defer resp.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
-  	if err != nil {
-    	return nil, err
-  	}
+	if err != nil {
+		return nil, err
+	}
 
 	feature := "var ytInitialData = "
 	ytInitialData := ""
@@ -100,54 +97,48 @@ func (c *Client)GetLive(channelID string) (*Live, error) {
 		return true
 	})
 
-	titleJp := strings.Join([]string{
+	titleJP := strings.Join([]string{
 		"",
-		"contents",
-		"twoColumnBrowseResultsRenderer",
-		"tabs",
-		"0",
-		"tabRenderer",
-		"content",
-		"sectionListRenderer",
-		"contents",
-		"0",
-		"itemSectionRenderer",
-		"contents",
-		"0",
-		"channelFeaturedContentRenderer",
-		"items",
-		"0",
-		"videoRenderer",
-		"title",
-		"runs",
-		"0",
-		"text",
+		"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
+		"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
+		"videoRenderer", "title", "runs", "0", "text",
 	}, "/")
 
-	channelNameJp := "/metadata/channelMetadataRenderer/title"
-	channelThumbnailURLJp := "/metadata/channelMetadataRenderer/avatar/thumbnails/0/url"
+	descriptionJP := strings.Join([]string{
+		"",
+		"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
+		"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
+		"videoRenderer", "descriptionSnippet", "runs", "0", "text",
+	}, "/")
 
+	channelNameJP := "/metadata/channelMetadataRenderer/title"
+	channelThumbnailURLJP := "/metadata/channelMetadataRenderer/avatar/thumbnails/0/url"
 
-	title, err := jpToString([]byte(ytInitialData), titleJp)
+	title, err := jpToString([]byte(ytInitialData), titleJP)
 	if err != nil {
 		return nil, err
 	}
 
-	channelName, err := jpToString([]byte(ytInitialData), channelNameJp)
+	descriptionSnippet, err := jpToString([]byte(ytInitialData), descriptionJP)
+	if err != nil {
+		return nil, err
+	}
+	description := strings.Replace(descriptionSnippet, "\\n", "", -1)
+
+	channelName, err := jpToString([]byte(ytInitialData), channelNameJP)
 	if err != nil {
 		return nil, err
 	}
 
-	channelThumbnailURL, err := jpToString([]byte(ytInitialData), channelThumbnailURLJp)
+	channelThumbnailURL, err := jpToString([]byte(ytInitialData), channelThumbnailURLJP)
 	if err != nil {
 		return nil, err
 	}
-
 
 	fmt.Println(title)
+	fmt.Println(description)
 	fmt.Println(channelName)
 	fmt.Println(channelThumbnailURL)
-
 
 	return nil, nil
 }
