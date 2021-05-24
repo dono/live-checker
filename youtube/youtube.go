@@ -16,19 +16,17 @@ type Client struct {
 }
 
 type Live struct {
-	ID          string
-	Title       string
-	Description string
-	Status      string
-	UserID      string
-	WatchURL    string
+	ID             string
+	ChannelName    string
+	ChannelIconURL string
+	Title          string
+	Description    string
+	Status         string
+	URL            string
 }
 
-type User struct {
-	UserID  string
-	Name    string
-	IconURL string
-}
+// ライブが開始されているかどうかをチェック
+func is_live() {}
 
 func jpToString(jsonBytes []byte, jp string) (string, error) {
 	var obj interface{}
@@ -44,7 +42,10 @@ func jpToString(jsonBytes []byte, jp string) (string, error) {
 		return "", err
 	}
 
-	return string(b), nil
+	str := string(b)
+	trimmed := str[1 : len(str)-1] // jsonの""を除去
+
+	return trimmed, nil
 }
 
 func New() *Client {
@@ -68,10 +69,8 @@ func (c *Client) Get(url string) (*http.Response, error) {
 }
 
 func (c *Client) GetLive(channelID string) (*Live, error) {
-	url := `https://www.youtube.com/channel/UCNsidkYpIAQ4QaufptQBPHQ`
-	// url := `https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g`
-	// url := `https://www.youtube.com/channel/UCXteDRy5qB0IjA8WPusCJ7w`
-	resp, err := c.Get(url)
+	channelURL := fmt.Sprintf("https://www.youtube.com/%s", channelID)
+	resp, err := c.Get(channelURL)
 
 	// ytInitialData を抜き出す
 	if err != nil {
@@ -130,15 +129,20 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 		return nil, err
 	}
 
-	channelThumbnailURL, err := jpToString([]byte(ytInitialData), channelThumbnailURLJP)
+	channelIconURL, err := jpToString([]byte(ytInitialData), channelThumbnailURLJP)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(title)
-	fmt.Println(description)
-	fmt.Println(channelName)
-	fmt.Println(channelThumbnailURL)
+	liveURL := fmt.Sprintf("%s/live", channelURL)
 
-	return nil, nil
+	return &Live{
+		ID:             channelID,
+		ChannelName:    channelName,
+		ChannelIconURL: channelIconURL,
+		Title:          title,
+		Description:    description,
+		Status:         "ON_AIR",
+		URL:            liveURL,
+	}, nil
 }
