@@ -8,10 +8,6 @@ import (
 )
 
 type Config struct {
-	Channel Channel
-}
-
-type Channel struct {
 	Youtube  []string `toml:"youtube"`
 	Niconico []string `toml:"niconico"`
 }
@@ -22,11 +18,10 @@ func Poll() {
 	// toml読み込み
 	var config Config
 
-	_, err := toml.DecodeFile("./config.toml", &config)
-	if err != nil {
+	if _, err := toml.DecodeFile("./config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(config.Channel.Youtube)
-	fmt.Println(config.Channel.Niconico)
+	fmt.Println(config.Youtube)
+	fmt.Println(config.Niconico)
 }
