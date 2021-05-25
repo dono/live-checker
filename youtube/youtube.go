@@ -26,7 +26,10 @@ type Live struct {
 }
 
 // ライブが開始されているかどうかをチェック
-func is_live() {}
+func isOnAir(ytInitialData string) bool {
+	feature := `"style":"LIVE","icon":{"iconType":"LIVE"}`
+	return strings.Contains(ytInitialData, feature)
+}
 
 func jpToString(jsonBytes []byte, jp string) (string, error) {
 	var obj interface{}
@@ -95,6 +98,12 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 		}
 		return true
 	})
+
+	if !isOnAir(ytInitialData) {
+		return &Live{
+			Status: "NOT_ON_AIR",
+		}, nil
+	}
 
 	titleJP := strings.Join([]string{
 		"",
