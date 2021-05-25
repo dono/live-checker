@@ -1,7 +1,6 @@
 package livechecker
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/BurntSushi/toml"
@@ -10,6 +9,15 @@ import (
 type Config struct {
 	Youtube  []string `toml:"youtube"`
 	Niconico []string `toml:"niconico"`
+}
+
+type Live struct {
+	Title       string
+	Status      string
+	Name        string
+	Description string
+	LiveURL     string
+	IconURL     string
 }
 
 func Poll() {
@@ -22,6 +30,11 @@ func Poll() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(config.Youtube)
-	fmt.Println(config.Niconico)
+	// youtubeチェック
+	// for _, id := range config.Niconico {
+	// 	client := youtube.New()
+	// 	client.Get(id)
+	// }
+
+	// niconicoチェック
 }
