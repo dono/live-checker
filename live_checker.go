@@ -1,9 +1,11 @@
 package livechecker
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/BurntSushi/toml"
+	"github.com/dono/live-checker/youtube"
 )
 
 type Config struct {
@@ -12,6 +14,7 @@ type Config struct {
 }
 
 type Live struct {
+	Platform    string
 	Title       string
 	Status      string
 	Name        string
@@ -30,11 +33,31 @@ func Poll() {
 		log.Fatal(err)
 	}
 
+	lives := []Live{}
+
 	// youtubeチェック
-	// for _, id := range config.Niconico {
-	// 	client := youtube.New()
-	// 	client.Get(id)
-	// }
+	for _, id := range config.Youtube {
+		client := youtube.New()
+		info, err := client.GetLive(id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if info.Status == "ENDED" {
+			continue
+		}
+
+		lives = append(lives, Live{
+			Platform:    "youtube",
+			Title:       info.Title,
+			Status:      info.Status,
+			Name:        info.ChannelName,
+			Description: info.Description,
+			LiveURL:     info.URL,
+			IconURL:     info.ChannelIconURL,
+		})
+	}
+	fmt.Println(len(lives))
 
 	// niconicoチェック
 }

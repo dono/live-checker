@@ -35,11 +35,9 @@ func TestGetOnAirLive(t *testing.T) {
 	}
 
 	assert.Equal(t, "ON_AIR", live.Status)
-	assert.Equal(t, "ウェザーニュース", live.ChannelName)
-	assert.Equal(t, "https://yt3.ggpht.com/ytc/AAUvwnih5YprsDRqTVkJeBa25c1DG_kIpulgFZPG2nhN=s900-c-k-c0x00ffffff-no-rj", live.ChannelIconURL)
-	assert.Equal(t, "【LIVE】 最新地震・気象情報　ウェザーニュースLiVE　2021年5月24日(月) 14時から", live.Title)
-	assert.Equal(t, "【最新の天気に関する情報】お天気アプリ「ウェザーニュース」からも随時最新情報をお伝えしていますhttps://weathernews.jp/s/download/weathernewstouch.htm...", live.Description)
-	assert.Equal(t, "https://www.youtube.com/channel/dummy/live", live.URL)
+	assert.Equal(t, "Marine Ch. 宝鐘マリン", live.ChannelName)
+	assert.Equal(t, "【Subnautica】初見の深海…恐怖が待ってるらしい【ホロライブ/宝鐘マリン】", live.Title)
+	// ToDo: Equal追加
 }
 
 func TestGetNotOnAirLive(t *testing.T) {
@@ -67,5 +65,5 @@ func TestGetNotOnAirLive(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Equal(t, "NOT_ON_AIR", live.Status)
+	assert.Equal(t, "ENDED", live.Status)
 }

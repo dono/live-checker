@@ -101,7 +101,7 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 
 	if !isOnAir(ytInitialData) {
 		return &Live{
-			Status: "NOT_ON_AIR",
+			Status: "ENDED",
 		}, nil
 	}
 

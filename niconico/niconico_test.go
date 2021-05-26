@@ -1,6 +1,7 @@
 package niconico
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -31,8 +32,6 @@ func TestGetLive(t *testing.T) {
 					}
 				}`
 
-	
-
 	httpmock.RegisterResponder(
 		"GET",
 		dummyURL,
@@ -52,6 +51,16 @@ func TestGetLive(t *testing.T) {
 	assert.Equal(t, "ON_AIR", live.Status)
 	assert.Equal(t, "1234", live.UserID)
 	assert.Equal(t, "https://live.nicovideo.jp/watch/lv1234", live.WatchURL)
+}
+
+func TestNotOnAir(t *testing.T) {
+	client := New()
+
+	live, err := client.GetLive("co3782975")
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(live)
 }
 
 func TestGetUser(t *testing.T) {
