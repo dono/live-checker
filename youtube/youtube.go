@@ -2,12 +2,31 @@ package youtube
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mattn/go-jsonpointer"
+)
+
+var ErrNoChannel = errors.New("Channel not found")
+
+const (
+	titleJP string = "/contents" + "/twoColumnBrowseResultsRenderer" + "/tabs" + "/0" + "/tabRenderer" +
+		"/content" + "/sectionListRenderer" + "/contents" + "/0" + "/itemSectionRenderer" +
+		"/contents" + "/0" + "/channelFeaturedContentRenderer" + "/items" + "/0" +
+		"/videoRenderer" + "/title" + "/runs" + "/0" + "/text"
+
+	descriptionJP string = "/contents" + "/twoColumnBrowseResultsRenderer" + "/tabs" + "/0" + "/tabRenderer" +
+		"/content" + "/sectionListRenderer" + "/contents" + "/0" + "/itemSectionRenderer" +
+		"/contents" + "/0" + "/channelFeaturedContentRenderer" + "/items" + "/0" +
+		"/videoRenderer" + "/descriptionSnippet" + "/runs" + "/0" + "/text"
+
+	channelNameJP string = "/metadata" + "/channelMetadataRenderer" + "/title"
+
+	channelThumbnailURLJP string = "/metadata" + "/channelMetadataRenderer" + "/avatar" + "/thumbnails" + "/0" + "/url"
 )
 
 type Client struct {
@@ -25,7 +44,6 @@ type Live struct {
 	URL            string
 }
 
-// ライブが開始されているかどうかをチェック
 func isOnAir(ytInitialData string) bool {
 	feature := `"style":"LIVE","icon":{"iconType":"LIVE"}`
 	return strings.Contains(ytInitialData, feature)
@@ -75,7 +93,6 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 	channelURL := fmt.Sprintf("https://www.youtube.com/%s", channelID)
 	resp, err := c.Get(channelURL)
 
-	// ytInitialData を抜き出す
 	if err != nil {
 		return nil, err
 	}
@@ -91,36 +108,35 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 
 	doc.Find("script").EachWithBreak(func(_ int, s *goquery.Selection) bool {
 		if strings.Contains(s.Text(), feature) {
-			t1 := strings.Replace(s.Text(), feature, "", 1)
-			t2 := strings.Replace(t1, ";", "", 1)
-			ytInitialData = t2
+			t := strings.Replace(s.Text(), feature, "", 1)
+			ytInitialData = strings.Replace(t, ";", "", 1)
 			return false
 		}
 		return true
 	})
 
 	if !isOnAir(ytInitialData) {
-		return &Live{
-			Status: "ENDED",
-		}, nil
+		if ytInitialData == "" {
+			return nil, ErrLiveNotFound
+		}
 	}
 
-	titleJP := strings.Join([]string{
-		"",
-		"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
-		"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
-		"videoRenderer", "title", "runs", "0", "text",
-	}, "/")
+	// titleJP := strings.Join([]string{
+	// 	"",
+	// 	"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
+	// 	"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
+	// 	"videoRenderer", "title", "runs", "0", "text",
+	// }, "/")
 
-	descriptionJP := strings.Join([]string{
-		"",
-		"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
-		"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
-		"videoRenderer", "descriptionSnippet", "runs", "0", "text",
-	}, "/")
+	// descriptionJP := strings.Join([]string{
+	// 	"",
+	// 	"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
+	// 	"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
+	// 	"videoRenderer", "descriptionSnippet", "runs", "0", "text",
+	// }, "/")
 
-	channelNameJP := "/metadata/channelMetadataRenderer/title"
-	channelThumbnailURLJP := "/metadata/channelMetadataRenderer/avatar/thumbnails/0/url"
+	// channelNameJP := "/metadata/channelMetadataRenderer/title"
+	// channelThumbnailURLJP := "/metadata/channelMetadataRenderer/avatar/thumbnails/0/url"
 
 	title, err := jpToString([]byte(ytInitialData), titleJP)
 	if err != nil {
