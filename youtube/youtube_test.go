@@ -31,7 +31,7 @@ func TestGetNotExistLive(t *testing.T) {
 	client := New()
 
 	_, err = client.GetLive(dummyChannelID)
-	if err == ErrNoChannel {
+	if err == ErrLiveNotFound {
 		return
 	}
 	log.Fatal(err)
@@ -88,10 +88,12 @@ func TestGetNotOnAirLive(t *testing.T) {
 
 	client := New()
 
-	live, err := client.GetLive(dummyChannelID)
-	if err != nil {
-		t.Error(err)
+	_, err = client.GetLive(dummyChannelID)
+	if err == ErrLiveNotFound {
+		return
 	}
 
-	assert.Equal(t, "ENDED", live.Status)
+	t.Error(err)
+
+	// assert.Equal(t, "ENDED", live.Status)
 }

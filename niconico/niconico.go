@@ -1,13 +1,29 @@
 package niconico
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/dono/live-checker/utils"
+)
+
+const (
+	idJP          string = "/data/lives/0/id"
+	titleJP       string = "/data/lives/0/title"
+	descriptionJP string = "/data/lives/0/description"
+	statusJP      string = "/data/lives/0/status"
+	userIDJP      string = "/data/lives/0/user_id"
+	watchURLJP    string = "/data/lives/0/watch_url"
+)
+
+var (
+	ErrLiveNotFound = errors.New("Live not found")
+	ErrUserNotFound = errors.New("User not found")
 )
 
 type Client struct {
@@ -24,32 +40,31 @@ type Live struct {
 }
 
 type User struct {
-	UserID string
-	Name string
+	UserID  string
+	Name    string
 	IconURL string
 }
 
 func genUserIconURL(userID string) string {
-	prefix := userID[:len(userID) - 4]
+	prefix := userID[:len(userID)-4]
 	url := fmt.Sprintf("https://secure-dcdn.cdn.nimg.jp/nicoaccount/usericon/%s/%s.jpg", prefix, userID)
 
 	return url
 }
 
-
 func New() *Client {
-    return &Client{
-        HTTPClient: http.DefaultClient,
-    }
+	return &Client{
+		HTTPClient: http.DefaultClient,
+	}
 }
 
-func (c *Client)Get(url string) (*http.Response, error) {
+func (c *Client) Get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-    resp, err := c.HTTPClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +72,7 @@ func (c *Client)Get(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-
-func (c *Client)GetLive(community_id string) (*Live, error) {
+func (c *Client) GetLive(community_id string) (*Live, error) {
 	community_num := strings.Trim(community_id, "co")
 	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json?limit=1&offset=0", community_num)
 
@@ -66,41 +80,63 @@ func (c *Client)GetLive(community_id string) (*Live, error) {
 	if err != nil {
 		return nil, err
 	}
-    defer resp.Body.Close()
+	defer resp.Body.Close()
 
-    b, err := ioutil.ReadAll(resp.Body)
+	json, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	js, err := simplejson.NewJson(b)
+	id, err := utils.JpToString(json, idJP)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
-	live := js.GetPath("data", "lives").GetIndex(0)
+	title, err := utils.JpToString(json, titleJP)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    return &Live{
-		ID:          live.Get("id").MustString(),
-		Title:       live.Get("title").MustString(),
-		Description: live.Get("description").MustString(),
-		Status:      live.Get("status").MustString(),
-		UserID:      strconv.Itoa(live.Get("user_id").MustInt()),
-		WatchURL:    live.Get("watch_url").MustString(),
+	description, err := utils.JpToString(json, descriptionJP)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	status, err := utils.JpToString(json, statusJP)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	userID, err := utils.JpToString(json, userIDJP)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	watchURL, err := utils.JpToString(json, watchURLJP)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &Live{
+		ID:          id,
+		Title:       title,
+		Description: description,
+		Status:      status,
+		UserID:      userID,
+		WatchURL:    watchURL,
 	}, nil
 }
 
-
-func (c *Client)GetUser(userID string) (*User, error) {
+func (c *Client) GetUser(userID string) (*User, error) {
 	url := fmt.Sprintf("https://public.api.nicovideo.jp/v1/users.json?userIds=%s", userID)
 
 	resp, err := c.Get(url)
 	if err != nil {
 		return nil, err
 	}
-    defer resp.Body.Close()
+	defer resp.Body.Close()
 
-    b, err := ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -114,8 +150,8 @@ func (c *Client)GetUser(userID string) (*User, error) {
 	iconURL := genUserIconURL(userID)
 
 	return &User{
-		UserID: userID,
-		Name: name,
-		IconURL: iconURL,	
+		UserID:  userID,
+		Name:    name,
+		IconURL: iconURL,
 	}, nil
 }

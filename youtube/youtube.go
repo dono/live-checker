@@ -1,17 +1,16 @@
 package youtube
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/mattn/go-jsonpointer"
+	"github.com/dono/live-checker/utils"
 )
 
-var ErrNoChannel = errors.New("Channel not found")
+var ErrLiveNotFound = errors.New("Live not found")
 
 const (
 	titleJP string = "/contents" + "/twoColumnBrowseResultsRenderer" + "/tabs" + "/0" + "/tabRenderer" +
@@ -47,26 +46,6 @@ type Live struct {
 func isOnAir(ytInitialData string) bool {
 	feature := `"style":"LIVE","icon":{"iconType":"LIVE"}`
 	return strings.Contains(ytInitialData, feature)
-}
-
-func jpToString(jsonBytes []byte, jp string) (string, error) {
-	var obj interface{}
-	json.Unmarshal(jsonBytes, &obj)
-
-	v, err := jsonpointer.Get(obj, jp)
-	if err != nil {
-		return "", err
-	}
-
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-
-	str := string(b)
-	trimmed := str[1 : len(str)-1] // jsonの""を除去
-
-	return trimmed, nil
 }
 
 func New() *Client {
@@ -116,45 +95,26 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 	})
 
 	if !isOnAir(ytInitialData) {
-		if ytInitialData == "" {
-			return nil, ErrLiveNotFound
-		}
+		return nil, ErrLiveNotFound // ToDo: 配信してないのかチャンネル自体が無いのか区別したほうが良さげ
 	}
 
-	// titleJP := strings.Join([]string{
-	// 	"",
-	// 	"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
-	// 	"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
-	// 	"videoRenderer", "title", "runs", "0", "text",
-	// }, "/")
-
-	// descriptionJP := strings.Join([]string{
-	// 	"",
-	// 	"contents", "twoColumnBrowseResultsRenderer", "tabs", "0", "tabRenderer", "content", "sectionListRenderer",
-	// 	"contents", "0", "itemSectionRenderer", "contents", "0", "channelFeaturedContentRenderer", "items", "0",
-	// 	"videoRenderer", "descriptionSnippet", "runs", "0", "text",
-	// }, "/")
-
-	// channelNameJP := "/metadata/channelMetadataRenderer/title"
-	// channelThumbnailURLJP := "/metadata/channelMetadataRenderer/avatar/thumbnails/0/url"
-
-	title, err := jpToString([]byte(ytInitialData), titleJP)
+	title, err := utils.JpToString([]byte(ytInitialData), titleJP)
 	if err != nil {
 		return nil, err
 	}
 
-	descriptionSnippet, err := jpToString([]byte(ytInitialData), descriptionJP)
+	descriptionSnippet, err := utils.JpToString([]byte(ytInitialData), descriptionJP)
 	if err != nil {
 		return nil, err
 	}
 	description := strings.Replace(descriptionSnippet, "\\n", "", -1)
 
-	channelName, err := jpToString([]byte(ytInitialData), channelNameJP)
+	channelName, err := utils.JpToString([]byte(ytInitialData), channelNameJP)
 	if err != nil {
 		return nil, err
 	}
 
-	channelIconURL, err := jpToString([]byte(ytInitialData), channelThumbnailURLJP)
+	channelIconURL, err := utils.JpToString([]byte(ytInitialData), channelThumbnailURLJP)
 	if err != nil {
 		return nil, err
 	}
