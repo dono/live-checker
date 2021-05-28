@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetOnAirLive(t *testing.T) {
+func TestGetNotExistLive(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
 	dummyCahnnelID := `co123456`
 	dummyURL := `https://com.nicovideo.jp/api/v1/communities/123456/lives.json?limit=1&offset=0`
-	testJson, err := ioutil.ReadFile("./test_json/not_exist_live.json")
+	testJson, err := ioutil.ReadFile("./test_json/not_exist_live_test.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -23,17 +23,50 @@ func TestGetOnAirLive(t *testing.T) {
 	httpmock.RegisterResponder(
 		"GET",
 		dummyURL,
-		httpmock.NewStringResponder(200, testJson),
+		httpmock.NewStringResponder(200, string(testJson)),
 	)
 
 	client := New()
 
-	live, err := client.GetLive(dummyCahnnelID)
+	_, err = client.GetLive(dummyCahnnelID)
 	if err != nil {
 		t.Error(err)
 	}
 
-	assert.Equal(t, "lv1234", live.ID)
+	if err == ErrLiveNotFound {
+		t.Error(err)
+	}
+}
+
+func TestGetOnAirLive(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	dummyCahnnelID := `co123456`
+	dummyURL := `https://com.nicovideo.jp/api/v1/communities/123456/lives.json?limit=1&offset=0`
+	testJson, err := ioutil.ReadFile("./test_json/on_air_live_test.json")
+	if err != nil {
+		t.Error(err)
+	}
+
+	httpmock.RegisterResponder(
+		"GET",
+		dummyURL,
+		httpmock.NewStringResponder(200, string(testJson)),
+	)
+
+	client := New()
+
+	_, err = client.GetLive(dummyCahnnelID)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err == ErrLiveNotFound {
+		t.Error(err)
+	}
+
+	assert.Equal(t, "lv123456", live.ID)
 	assert.Equal(t, "test title", live.Title)
 	assert.Equal(t, "test description", live.Description)
 	assert.Equal(t, "ON_AIR", live.Status)

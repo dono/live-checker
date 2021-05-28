@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bitly/go-simplejson"
 	"github.com/dono/live-checker/utils"
 )
 
@@ -19,6 +18,7 @@ const (
 	statusJP      string = "/data/lives/0/status"
 	userIDJP      string = "/data/lives/0/user_id"
 	watchURLJP    string = "/data/lives/0/watch_url"
+	nameJP        string = "/data/0/nickname"
 )
 
 var (
@@ -82,6 +82,10 @@ func (c *Client) GetLive(community_id string) (*Live, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 403 {
+		return nil, ErrLiveNotFound
+	}
+
 	json, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -136,17 +140,16 @@ func (c *Client) GetUser(userID string) (*User, error) {
 	}
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	json, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	js, err := simplejson.NewJson(b)
+	name, err := utils.JpToString(json, nameJP)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
-	name := js.Get("data").GetIndex(0).Get("nickname").MustString()
 	iconURL := genUserIconURL(userID)
 
 	return &User{
