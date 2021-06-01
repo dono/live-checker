@@ -22,22 +22,6 @@
                 "started_at": "2021-05-30T14:00:00+0900"
             },
             {
-                "id": "lv222222",
-                "title": "test title",
-                "description": "test description",
-                "status": "ON_AIR",
-                "user_id": 12345,
-                "watch_url": "https:\/\/live.nicovideo.jp\/watch\/lv222222",
-                "features": {
-                    "is_member_only": false
-                },
-                "timeshift": {
-                    "enabled": true,
-                    "can_view": false
-                },
-                "started_at": "2021-05-28T14:00:00+0900"
-            },
-            {
                 "id": "lv333333",
                 "title": "ended title",
                 "description": "ended description",

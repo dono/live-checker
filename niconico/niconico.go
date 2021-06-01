@@ -1,7 +1,7 @@
 package niconico
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,21 +9,25 @@ import (
 	"strings"
 
 	"github.com/dono/live-checker/utils"
+	"github.com/mattn/go-jsonpointer"
 )
 
 const (
-	idJP          string = "/data/lives/0/id"
-	titleJP       string = "/data/lives/0/title"
-	descriptionJP string = "/data/lives/0/description"
-	statusJP      string = "/data/lives/0/status"
-	userIDJP      string = "/data/lives/0/user_id"
-	watchURLJP    string = "/data/lives/0/watch_url"
+	livesJP       string = "/data/lives"
+	idJP          string = "/id"
+	titleJP       string = "/title"
+	descriptionJP string = "/description"
+	statusJP      string = "/status"
+	userIDJP      string = "/user_id"
+	watchURLJP    string = "/watch_url"
 	nameJP        string = "/data/0/nickname"
 )
 
-var (
-	ErrLiveNotFound = errors.New("Live not found")
-	ErrUserNotFound = errors.New("User not found")
+const (
+	statusOnAir             string = "ON_AIR"
+	statusNotOnAir          string = "NOT_ON_AIR"
+	statusCommunityNotFound string = "COMMUNITY_NOT_FOUND"
+	statusUserNotFound      string = "USER_NOT_FOUND"
 )
 
 type Client struct {
@@ -74,7 +78,7 @@ func (c *Client) Get(url string) (*http.Response, error) {
 
 func (c *Client) GetLive(community_id string) (*Live, error) {
 	community_num := strings.Trim(community_id, "co")
-	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json?limit=1&offset=0", community_num)
+	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json", community_num)
 
 	resp, err := c.Get(url)
 	if err != nil {
@@ -83,51 +87,79 @@ func (c *Client) GetLive(community_id string) (*Live, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 403 {
-		return nil, ErrLiveNotFound
+		return &Live{
+			Status: statusCommunityNotFound,
+		}, nil
 	}
 
-	json, err := ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := utils.JpToString(json, idJP)
+	var obj interface{}
+	err = json.Unmarshal(b, &obj)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	title, err := utils.JpToString(json, titleJP)
+	obj, err = jsonpointer.Get(obj, livesJP)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	description, err := utils.JpToString(json, descriptionJP)
-	if err != nil {
-		log.Fatal(err)
-	}
+	lives := obj.([]interface{})
 
-	status, err := utils.JpToString(json, statusJP)
-	if err != nil {
-		log.Fatal(err)
-	}
+	for _, live := range lives {
+		status, err := utils.JpToString(live, statusJP)
+		if err != nil {
+			return nil, err
+		}
 
-	userID, err := utils.JpToString(json, userIDJP)
-	if err != nil {
-		log.Fatal(err)
-	}
+		if status == "ON_AIR" {
+			id, err := utils.JpToString(live, idJP)
+			if err != nil {
+				return nil, err
+			}
 
-	watchURL, err := utils.JpToString(json, watchURLJP)
-	if err != nil {
-		log.Fatal(err)
+			title, err := utils.JpToString(live, titleJP)
+			if err != nil {
+				return nil, err
+			}
+
+			description, err := utils.JpToString(live, descriptionJP)
+			if err != nil {
+				return nil, err
+			}
+
+			userID, err := utils.JpToString(live, userIDJP)
+			if err != nil {
+				return nil, err
+			}
+
+			watchURL, err := utils.JpToString(live, watchURLJP)
+			if err != nil {
+				return nil, err
+			}
+
+			return &Live{
+				ID:          id,
+				Title:       title,
+				Description: description,
+				Status:      statusOnAir,
+				UserID:      userID,
+				WatchURL:    watchURL,
+			}, nil
+		}
 	}
 
 	return &Live{
-		ID:          id,
-		Title:       title,
-		Description: description,
-		Status:      status,
-		UserID:      userID,
-		WatchURL:    watchURL,
+		ID:          "",
+		Title:       "",
+		Description: "",
+		Status:      statusNotOnAir,
+		UserID:      "",
+		WatchURL:    "",
 	}, nil
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/dono/live-checker/utils"
 )
 
-var ErrLiveNotFound = errors.New("Live not found")
+var ErrLiveNotFound = errors.New("live not found")
 
 const (
 	titleJP string = "/contents" + "/twoColumnBrowseResultsRenderer" + "/tabs" + "/0" + "/tabRenderer" +
