@@ -1,7 +1,7 @@
 package youtube
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,8 +9,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/dono/live-checker/utils"
 )
-
-var ErrLiveNotFound = errors.New("live not found")
 
 const (
 	titleJP string = "/contents" + "/twoColumnBrowseResultsRenderer" + "/tabs" + "/0" + "/tabRenderer" +
@@ -26,6 +24,12 @@ const (
 	channelNameJP string = "/metadata" + "/channelMetadataRenderer" + "/title"
 
 	channelThumbnailURLJP string = "/metadata" + "/channelMetadataRenderer" + "/avatar" + "/thumbnails" + "/0" + "/url"
+)
+
+const (
+	statusOnAir           string = "ON_AIR"
+	statusNotOnAir        string = "NOT_ON_AIR"
+	statusChannelNotFound string = "CHANNEL_NOT_FOUND"
 )
 
 type Client struct {
@@ -46,6 +50,16 @@ type Live struct {
 func isOnAir(ytInitialData string) bool {
 	feature := `"style":"LIVE","icon":{"iconType":"LIVE"}`
 	return strings.Contains(ytInitialData, feature)
+}
+
+func isExistChannel(ytInitialData string) bool {
+	feature := `"type":"ERROR"`
+	if ytInitialData == "" {
+		return false
+	} else if strings.Contains(ytInitialData, feature) {
+		return false
+	}
+	return true
 }
 
 func New() *Client {
@@ -94,27 +108,41 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 		return true
 	})
 
-	if !isOnAir(ytInitialData) {
-		return nil, ErrLiveNotFound // ToDo: 配信してないのかチャンネル自体が無いのか区別したほうが良さげ
+	if !isExistChannel(ytInitialData) {
+		return &Live{
+			Status: statusChannelNotFound,
+		}, nil
 	}
 
-	title, err := utils.JpToString([]byte(ytInitialData), titleJP)
+	if !isOnAir(ytInitialData) {
+		return &Live{
+			Status: statusNotOnAir,
+		}, nil
+	}
+
+	var obj interface{}
+	err = json.Unmarshal([]byte(ytInitialData), &obj)
 	if err != nil {
 		return nil, err
 	}
 
-	descriptionSnippet, err := utils.JpToString([]byte(ytInitialData), descriptionJP)
+	title, err := utils.JpToString(obj, titleJP)
+	if err != nil {
+		return nil, err
+	}
+
+	descriptionSnippet, err := utils.JpToString(obj, descriptionJP)
 	if err != nil {
 		return nil, err
 	}
 	description := strings.Replace(descriptionSnippet, "\\n", "", -1)
 
-	channelName, err := utils.JpToString([]byte(ytInitialData), channelNameJP)
+	channelName, err := utils.JpToString(obj, channelNameJP)
 	if err != nil {
 		return nil, err
 	}
 
-	channelIconURL, err := utils.JpToString([]byte(ytInitialData), channelThumbnailURLJP)
+	channelIconURL, err := utils.JpToString(obj, channelThumbnailURLJP)
 	if err != nil {
 		return nil, err
 	}

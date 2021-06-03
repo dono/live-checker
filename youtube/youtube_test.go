@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetNotExistLive(t *testing.T) {
+func TestGetNotExistChannel1(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
 	dummyChannelID := `channel/dummy`
 	dummyURL := fmt.Sprintf("https://www.youtube.com/%s", dummyChannelID)
 
-	testHtml, err := ioutil.ReadFile("./test_html/not_exist_channel_test.html")
+	testHtml, err := ioutil.ReadFile("./test_html/not_exist_channel_test1.html")
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,11 +30,36 @@ func TestGetNotExistLive(t *testing.T) {
 
 	client := New()
 
-	_, err = client.GetLive(dummyChannelID)
-	if err == ErrLiveNotFound {
-		return
+	live, err := client.GetLive(dummyChannelID)
+	if live.Status != "CHANNEL_NOT_FOUND" {
+		log.Fatal(err)
 	}
-	log.Fatal(err)
+}
+
+func TestGetNotExistChannel2(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	dummyChannelID := `channel/dummy`
+	dummyURL := fmt.Sprintf("https://www.youtube.com/%s", dummyChannelID)
+
+	testHtml, err := ioutil.ReadFile("./test_html/not_exist_channel_test2.html")
+	if err != nil {
+		t.Error(err)
+	}
+
+	httpmock.RegisterResponder(
+		"GET",
+		dummyURL,
+		httpmock.NewStringResponder(200, string(testHtml)),
+	)
+
+	client := New()
+
+	live, err := client.GetLive(dummyChannelID)
+	if live.Status != "CHANNEL_NOT_FOUND" {
+		log.Fatal(err)
+	}
 }
 
 func TestGetOnAirLive(t *testing.T) {
@@ -88,12 +113,8 @@ func TestGetNotOnAirLive(t *testing.T) {
 
 	client := New()
 
-	_, err = client.GetLive(dummyChannelID)
-	if err == ErrLiveNotFound {
-		return
+	live, err := client.GetLive(dummyChannelID)
+	if live.Status != "NOT_ON_AIR" {
+		t.Error(err)
 	}
-
-	t.Error(err)
-
-	// assert.Equal(t, "ENDED", live.Status)
 }
