@@ -101,7 +101,7 @@ func TestGetUser(t *testing.T) {
 
 	dummyUserID := `123456`
 	dummyURL := fmt.Sprintf("https://public.api.nicovideo.jp/v1/users.json?userIds=%s", dummyUserID)
-	testJson, err := ioutil.ReadFile("./test_json/user.json")
+	testJson, err := ioutil.ReadFile("./test_json/user_test.json")
 	if err != nil {
 		t.Error(err)
 	}

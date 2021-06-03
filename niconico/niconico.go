@@ -172,12 +172,18 @@ func (c *Client) GetUser(userID string) (*User, error) {
 	}
 	defer resp.Body.Close()
 
-	json, err := ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	name, err := utils.JpToString(json, nameJP)
+	var obj interface{}
+	err = json.Unmarshal(b, &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := utils.JpToString(obj, nameJP)
 	if err != nil {
 		log.Fatal(err)
 	}
