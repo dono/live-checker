@@ -84,8 +84,8 @@ func (c *Client) Get(url string) (*http.Response, error) {
 
 func (c *Client) GetLive(channelID string) (*Live, error) {
 	channelURL := fmt.Sprintf("https://www.youtube.com/%s", channelID)
-	resp, err := c.Get(channelURL)
 
+	resp, err := c.Get(channelURL)
 	if err != nil {
 		return nil, err
 	}
