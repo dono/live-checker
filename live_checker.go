@@ -43,7 +43,7 @@ func Poll() {
 			log.Fatal(err)
 		}
 
-		if info.Status == "ENDED" {
+		if info.Status == "NOT_ON_AIR" || info.Status == "CHANNEL_NOT_FOUND" {
 			continue
 		}
 
