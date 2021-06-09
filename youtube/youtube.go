@@ -159,3 +159,16 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 		URL:            liveURL,
 	}, nil
 }
+
+func (c *Client) GetLives(channelIDs []string) ([](*Live), error) {
+	lives := []*Live{}
+	for _, channelID := range channelIDs {
+		live, err := c.GetLive(channelID)
+		if err != nil {
+			return nil, err
+		}
+		lives = append(lives, live)
+	}
+
+	return lives, nil
+}

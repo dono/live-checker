@@ -1,7 +1,6 @@
 package livechecker
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/BurntSushi/toml"
@@ -23,9 +22,7 @@ type Live struct {
 	IconURL     string
 }
 
-func Poll() {
-	// live_checker.go -> redis <- http server
-
+func Crawl() {
 	// toml読み込み
 	var config Config
 
@@ -33,7 +30,7 @@ func Poll() {
 		log.Fatal(err)
 	}
 
-	lives := []Live{}
+	onAirLives := []Live{}
 
 	// youtubeチェック
 	for _, id := range config.Youtube {
@@ -47,7 +44,7 @@ func Poll() {
 			continue
 		}
 
-		lives = append(lives, Live{
+		onAirLives = append(onAirLives, Live{
 			Platform:    "youtube",
 			Title:       info.Title,
 			Status:      info.Status,
@@ -57,7 +54,4 @@ func Poll() {
 			IconURL:     info.ChannelIconURL,
 		})
 	}
-	fmt.Println(len(lives))
-
-	// niconicoチェック
 }
