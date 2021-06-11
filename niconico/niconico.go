@@ -76,9 +76,9 @@ func (c *Client) Get(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) GetLive(community_id string) (*Live, error) {
-	community_num := strings.Trim(community_id, "co")
-	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json", community_num)
+func (c *Client) GetLive(communityID string) (*Live, error) {
+	communityNum := strings.Trim(communityID, "co")
+	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json", communityNum)
 
 	resp, err := c.Get(url)
 	if err != nil {
@@ -154,13 +154,21 @@ func (c *Client) GetLive(community_id string) (*Live, error) {
 	}
 
 	return &Live{
-		ID:          "",
-		Title:       "",
-		Description: "",
-		Status:      statusNotOnAir,
-		UserID:      "",
-		WatchURL:    "",
+		Status: statusNotOnAir,
 	}, nil
+}
+
+func (c *Client) GetLives(communityIDs []string) ([]*Live, error) {
+	lives := []*Live{}
+	for _, communityID := range communityIDs {
+		live, err := c.GetLive(communityID)
+		if err != nil {
+			return nil, err
+		}
+		lives = append(lives, live)
+	}
+
+	return lives, nil
 }
 
 func (c *Client) GetUser(userID string) (*User, error) {

@@ -160,7 +160,7 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 	}, nil
 }
 
-func (c *Client) GetLives(channelIDs []string) ([](*Live), error) {
+func (c *Client) GetLives(channelIDs []string) ([]*Live, error) {
 	lives := []*Live{}
 	for _, channelID := range channelIDs {
 		live, err := c.GetLive(channelID)
