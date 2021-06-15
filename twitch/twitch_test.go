@@ -30,10 +30,13 @@ func TestGetOnAirLive(t *testing.T) {
 
 	client := New()
 	live, err := client.GetLive(dummyChannelID)
+	if err != nil {
+		t.Error(err)
+	}
 
 	assert.Equal(t, "ON_AIR", live.Status)
 	assert.Equal(t, "dummyID", live.ID)
-	assert.Equal(t, "Jasper7se", live.ChannelName)
+	assert.Equal(t, "Jasper7se", live.Name)
 	assert.Equal(t, "Jasper7se - Twitch", live.Title)
 	assert.Equal(t, "dummy description", live.Description)
 }

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dono/live-checker/entity"
+	"github.com/dono/live-checker/status"
 	"github.com/dono/live-checker/utils"
 	"github.com/mattn/go-jsonpointer"
 )
@@ -23,24 +25,8 @@ const (
 	nameJP        string = "/data/0/nickname"
 )
 
-const (
-	statusOnAir             string = "ON_AIR"
-	statusNotOnAir          string = "NOT_ON_AIR"
-	statusCommunityNotFound string = "COMMUNITY_NOT_FOUND"
-	statusUserNotFound      string = "USER_NOT_FOUND"
-)
-
 type Client struct {
 	HTTPClient *http.Client
-}
-
-type Live struct {
-	ID          string
-	Title       string
-	Description string
-	Status      string
-	UserID      string
-	WatchURL    string
 }
 
 type User struct {
@@ -76,7 +62,7 @@ func (c *Client) Get(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) GetLive(communityID string) (*Live, error) {
+func (c *Client) GetLive(communityID string) (*entity.Live, error) {
 	communityNum := strings.Trim(communityID, "co")
 	url := fmt.Sprintf("https://com.nicovideo.jp/api/v1/communities/%s/lives.json", communityNum)
 
@@ -87,8 +73,8 @@ func (c *Client) GetLive(communityID string) (*Live, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 403 {
-		return &Live{
-			Status: statusCommunityNotFound,
+		return &entity.Live{
+			Status: status.CHANNEL_NOT_FOUND,
 		}, nil
 	}
 
@@ -111,17 +97,12 @@ func (c *Client) GetLive(communityID string) (*Live, error) {
 	lives := obj.([]interface{})
 
 	for _, live := range lives {
-		status, err := utils.JpToString(live, statusJP)
+		nicoStatus, err := utils.JpToString(live, statusJP)
 		if err != nil {
 			return nil, err
 		}
 
-		if status == "ON_AIR" {
-			id, err := utils.JpToString(live, idJP)
-			if err != nil {
-				return nil, err
-			}
-
+		if nicoStatus == "ON_AIR" {
 			title, err := utils.JpToString(live, titleJP)
 			if err != nil {
 				return nil, err
@@ -142,24 +123,31 @@ func (c *Client) GetLive(communityID string) (*Live, error) {
 				return nil, err
 			}
 
-			return &Live{
-				ID:          id,
+			user, err := c.GetUser(userID)
+			if err != nil {
+				return nil, err
+			}
+
+			return &entity.Live{
+				Platform:    "niconico",
+				ID:          communityID,
+				Name:        user.Name,
 				Title:       title,
 				Description: description,
-				Status:      statusOnAir,
-				UserID:      userID,
+				Status:      status.ON_AIR,
 				WatchURL:    watchURL,
+				IconURL:     user.IconURL,
 			}, nil
 		}
 	}
 
-	return &Live{
-		Status: statusNotOnAir,
+	return &entity.Live{
+		Status: status.NOT_ON_AIR,
 	}, nil
 }
 
-func (c *Client) GetLives(communityIDs []string) ([]*Live, error) {
-	lives := []*Live{}
+func (c *Client) GetLives(communityIDs []string) ([]*entity.Live, error) {
+	lives := []*entity.Live{}
 	for _, communityID := range communityIDs {
 		live, err := c.GetLive(communityID)
 		if err != nil {

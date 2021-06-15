@@ -6,12 +6,8 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-)
-
-const (
-	statusOnAir           string = "ON_AIR"
-	statusNotOnAir        string = "NOT_ON_AIR"
-	statusChannelNotFound string = "CHANNEL_NOT_FOUND"
+	"github.com/dono/live-checker/entity"
+	"github.com/dono/live-checker/status"
 )
 
 const (
@@ -23,16 +19,6 @@ const (
 type Client struct {
 	HTTPClient *http.Client
 	Header     *http.Header
-}
-
-type Live struct {
-	ID             string
-	ChannelName    string
-	ChannelIconURL string
-	Title          string
-	Description    string
-	Status         string
-	URL            string
 }
 
 func isExistChannel(doc *goquery.Document) bool {
@@ -67,7 +53,7 @@ func (c *Client) Get(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) GetLive(channelID string) (*Live, error) {
+func (c *Client) GetLive(channelID string) (*entity.Live, error) {
 	channelURL := fmt.Sprintf("https://www.twitch.tv/%s", channelID)
 
 	resp, err := c.Get(channelURL)
@@ -82,14 +68,14 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 	}
 
 	if !isExistChannel(doc) {
-		return &Live{
-			Status: statusChannelNotFound,
+		return &entity.Live{
+			Status: status.CHANNEL_NOT_FOUND,
 		}, nil
 	}
 
 	if !isOnAir(doc) {
-		return &Live{
-			Status: statusNotOnAir,
+		return &entity.Live{
+			Status: status.NOT_ON_AIR,
 		}, nil
 	}
 
@@ -111,19 +97,20 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 
 	channelName := genChannelName(title)
 
-	return &Live{
-		ID:             channelID,
-		ChannelName:    channelName,
-		ChannelIconURL: channelIconURL,
-		Title:          title,
-		Description:    description,
-		Status:         statusOnAir,
-		URL:            channelURL,
+	return &entity.Live{
+		Platform:    "twitch",
+		ID:          channelID,
+		Name:        channelName,
+		Title:       title,
+		Description: description,
+		Status:      status.ON_AIR,
+		WatchURL:    channelURL,
+		IconURL:     channelIconURL,
 	}, nil
 }
 
-func (c *Client) GetLives(channelIDs []string) ([]*Live, error) {
-	lives := []*Live{}
+func (c *Client) GetLives(channelIDs []string) ([]*entity.Live, error) {
+	lives := []*entity.Live{}
 	for _, channelID := range channelIDs {
 		live, err := c.GetLive(channelID)
 		if err != nil {

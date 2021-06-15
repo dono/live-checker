@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/dono/live-checker/entity"
+	"github.com/dono/live-checker/status"
 	"github.com/dono/live-checker/utils"
 )
 
@@ -26,25 +28,9 @@ const (
 	channelThumbnailURLJP string = "/metadata" + "/channelMetadataRenderer" + "/avatar" + "/thumbnails" + "/0" + "/url"
 )
 
-const (
-	statusOnAir           string = "ON_AIR"
-	statusNotOnAir        string = "NOT_ON_AIR"
-	statusChannelNotFound string = "CHANNEL_NOT_FOUND"
-)
-
 type Client struct {
 	HTTPClient *http.Client
 	Header     *http.Header
-}
-
-type Live struct {
-	ID             string
-	ChannelName    string
-	ChannelIconURL string
-	Title          string
-	Description    string
-	Status         string
-	URL            string
 }
 
 func isOnAir(ytInitialData string) bool {
@@ -82,7 +68,7 @@ func (c *Client) Get(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) GetLive(channelID string) (*Live, error) {
+func (c *Client) GetLive(channelID string) (*entity.Live, error) {
 	channelURL := fmt.Sprintf("https://www.youtube.com/%s", channelID)
 
 	resp, err := c.Get(channelURL)
@@ -109,14 +95,14 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 	})
 
 	if !isExistChannel(ytInitialData) {
-		return &Live{
-			Status: statusChannelNotFound,
+		return &entity.Live{
+			Status: status.CHANNEL_NOT_FOUND,
 		}, nil
 	}
 
 	if !isOnAir(ytInitialData) {
-		return &Live{
-			Status: statusNotOnAir,
+		return &entity.Live{
+			Status: status.NOT_ON_AIR,
 		}, nil
 	}
 
@@ -149,19 +135,20 @@ func (c *Client) GetLive(channelID string) (*Live, error) {
 
 	liveURL := fmt.Sprintf("%s/live", channelURL)
 
-	return &Live{
-		ID:             channelID,
-		ChannelName:    channelName,
-		ChannelIconURL: channelIconURL,
-		Title:          title,
-		Description:    description,
-		Status:         "ON_AIR",
-		URL:            liveURL,
+	return &entity.Live{
+		Platform:    "youtube",
+		ID:          channelID,
+		Name:        channelName,
+		Title:       title,
+		Description: description,
+		Status:      status.ON_AIR,
+		IconURL:     channelIconURL,
+		WatchURL:    liveURL,
 	}, nil
 }
 
-func (c *Client) GetLives(channelIDs []string) ([]*Live, error) {
-	lives := []*Live{}
+func (c *Client) GetLives(channelIDs []string) ([]*entity.Live, error) {
+	lives := []*entity.Live{}
 	for _, channelID := range channelIDs {
 		live, err := c.GetLive(channelID)
 		if err != nil {

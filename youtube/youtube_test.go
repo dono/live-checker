@@ -88,7 +88,7 @@ func TestGetOnAirLive(t *testing.T) {
 	}
 
 	assert.Equal(t, "ON_AIR", live.Status)
-	assert.Equal(t, "Marine Ch. 宝鐘マリン", live.ChannelName)
+	assert.Equal(t, "Marine Ch. 宝鐘マリン", live.Name)
 	assert.Equal(t, "【Subnautica】初見の深海…恐怖が待ってるらしい【ホロライブ/宝鐘マリン】", live.Title)
 	// ToDo: Equal追加
 }

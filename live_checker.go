@@ -4,6 +4,9 @@ import (
 	"log"
 
 	"github.com/BurntSushi/toml"
+	"github.com/dono/live-checker/entity"
+	"github.com/dono/live-checker/niconico"
+	"github.com/dono/live-checker/twitch"
 	"github.com/dono/live-checker/youtube"
 )
 
@@ -33,25 +36,35 @@ func Crawl() {
 	onAirLives := []Live{}
 
 	// youtubeチェック
-	for _, id := range config.Youtube {
-		client := youtube.New()
-		info, err := client.GetLive(id)
+	youtubeClient := youtube.New()
+	niconicoClient := niconico.New()
+	twitchClient := twitch.New()
+
+	ch := make(chan []*entity.Live)
+
+	go func() {
+		lives, err := youtubeClient.GetLives(config.Youtube)
 		if err != nil {
 			log.Fatal(err)
 		}
+		ch <- lives
+	}()
 
-		if info.Status == "NOT_ON_AIR" || info.Status == "CHANNEL_NOT_FOUND" {
-			continue
+	go func() {
+		lives, err := niconicoClient.GetLives(config.Niconico)
+		if err != nil {
+			log.Fatal(err)
 		}
+		ch <- lives
+	}()
 
-		onAirLives = append(onAirLives, Live{
-			Platform:    "youtube",
-			Title:       info.Title,
-			Status:      info.Status,
-			Name:        info.ChannelName,
-			Description: info.Description,
-			LiveURL:     info.URL,
-			IconURL:     info.ChannelIconURL,
-		})
-	}
+	go func() {
+		lives, err := twitchClient.GetLives(config.Twitch)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ch <- lives
+	}()
+
+	return lives
 }

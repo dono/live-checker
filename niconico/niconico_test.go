@@ -13,9 +13,16 @@ func TestGetOnAirLive(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	dummyCahnnelID := `co123456`
+	dummyChannelID := `co123456`
 	dummyURL := `https://com.nicovideo.jp/api/v1/communities/123456/lives.json`
 	testJson, err := ioutil.ReadFile("./test_json/on_air_live_test.json")
+	if err != nil {
+		t.Error(err)
+	}
+
+	dummyUserID := `12345`
+	dummyUserURL := fmt.Sprintf("https://public.api.nicovideo.jp/v1/users.json?userIds=%s", dummyUserID)
+	testUserJson, err := ioutil.ReadFile("./test_json/user_test.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -26,18 +33,23 @@ func TestGetOnAirLive(t *testing.T) {
 		httpmock.NewStringResponder(200, string(testJson)),
 	)
 
+	httpmock.RegisterResponder(
+		"GET",
+		dummyUserURL,
+		httpmock.NewStringResponder(200, string(testUserJson)),
+	)
+
 	client := New()
 
-	live, err := client.GetLive(dummyCahnnelID)
+	live, err := client.GetLive(dummyChannelID)
 	if err != nil {
 		t.Error(err)
 	}
 
-	assert.Equal(t, "lv222222", live.ID)
+	assert.Equal(t, "co123456", live.ID)
 	assert.Equal(t, "test title", live.Title)
 	assert.Equal(t, "test description", live.Description)
 	assert.Equal(t, "ON_AIR", live.Status)
-	assert.Equal(t, "12345", live.UserID)
 	assert.Equal(t, "https://live.nicovideo.jp/watch/lv222222", live.WatchURL)
 }
 
@@ -92,7 +104,7 @@ func TestGetNotExistCommunityLive(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Equal(t, "COMMUNITY_NOT_FOUND", live.Status)
+	assert.Equal(t, "CHANNEL_NOT_FOUND", live.Status)
 }
 
 func TestGetUser(t *testing.T) {
